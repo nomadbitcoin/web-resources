@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Map Pin Generator</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      :root {
+        --naples-yellow: #fde157ff;
+        --mustard: #fbd743ff;
+        --fluorescent-cyan: #45f0f0ff;
+        --celestial-blue: #0695d6ff;
+        --prussian-blue: #043256ff;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        background: linear-gradient(
+          135deg,
+          var(--prussian-blue),
+          var(--celestial-blue)
+        );
+        min-height: 100vh;
+        color: white;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--naples-yellow);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        color: var(--fluorescent-cyan);
+        font-style: italic;
+      }
+
+      .main-content {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .input-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 25px;
+        border: 2px solid var(--fluorescent-cyan);
+      }
+
+      .input-section h2 {
+        color: var(--mustard);
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--fluorescent-cyan);
+        font-weight: bold;
+      }
+
+      textarea {
+        width: 100%;
+        height: 150px;
+        padding: 12px;
+        border: 2px solid var(--celestial-blue);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 14px;
+        resize: vertical;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: var(--naples-yellow);
+        box-shadow: 0 0 10px rgba(253, 225, 87, 0.3);
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+      }
+
+      .btn-primary {
+        background: var(--naples-yellow);
+        color: var(--prussian-blue);
+      }
+
+      .btn-primary:hover {
+        background: var(--mustard);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(253, 225, 87, 0.4);
+      }
+
+      .btn-secondary {
+        background: var(--fluorescent-cyan);
+        color: var(--prussian-blue);
+      }
+
+      .btn-secondary:hover {
+        background: var(--celestial-blue);
+        color: white;
+        transform: translateY(-2px);
+      }
+
+      .btn-danger {
+        background: #ff6b6b;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #ff5252;
+        transform: translateY(-2px);
+      }
+
+      .map-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        border: 2px solid var(--fluorescent-cyan);
+      }
+
+      .map-section h2 {
+        color: var(--mustard);
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+      }
+
+      #map {
+        height: 500px;
+        border-radius: 10px;
+        border: 3px solid var(--celestial-blue);
+      }
+
+      .status {
+        margin-top: 15px;
+        padding: 10px;
+        border-radius: 8px;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .status.success {
+        background: rgba(76, 175, 80, 0.2);
+        border: 1px solid #4caf50;
+        color: #4caf50;
+      }
+
+      .status.error {
+        background: rgba(244, 67, 54, 0.2);
+        border: 1px solid #f44336;
+        color: #f44336;
+      }
+
+      .status.info {
+        background: rgba(33, 150, 243, 0.2);
+        border: 1px solid #2196f3;
+        color: #2196f3;
+      }
+
+      .examples {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 25px;
+        border: 2px solid var(--fluorescent-cyan);
+      }
+
+      .examples h2 {
+        color: var(--mustard);
+        margin-bottom: 15px;
+        font-size: 1.3rem;
+      }
+
+      .example-list {
+        list-style: none;
+        margin-bottom: 15px;
+      }
+
+      .example-list li {
+        margin-bottom: 5px;
+        color: var(--fluorescent-cyan);
+      }
+
+      .example-btn {
+        background: var(--celestial-blue);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 12px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+
+      .example-btn:hover {
+        background: var(--prussian-blue);
+      }
+
+      @media (max-width: 768px) {
+        .main-content {
+          grid-template-columns: 1fr;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        #map {
+          height: 400px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🗺️ Map Pin Generator</h1>
+        <p>Generate interactive maps with pins from your list of places</p>
+      </div>
+
+      <div class="main-content">
+        <div class="input-section">
+          <h2>📍 Input Places</h2>
+          <div class="input-group">
+            <label for="placesInput">Enter place names (one per line):</label>
+            <textarea
+              id="placesInput"
+              placeholder="Enter place names here, one per line...&#10;&#10;Examples:&#10;New York, USA&#10;London, UK&#10;Tokyo, Japan&#10;Paris, France"
+            ></textarea>
+          </div>
+
+          <div class="button-group">
+            <button class="btn btn-primary" onclick="generateMap()">
+              🗺️ Generate Map
+            </button>
+            <button class="btn btn-secondary" onclick="clearMap()">
+              🗑️ Clear Map
+            </button>
+            <button class="btn btn-danger" onclick="clearInput()">
+              📝 Clear Input
+            </button>
+          </div>
+
+          <div id="status" class="status" style="display: none"></div>
+        </div>
+
+        <div class="map-section">
+          <h2>🌍 Interactive Map</h2>
+          <div id="map"></div>
+        </div>
+      </div>
+
+      <div class="examples">
+        <h2>💡 Quick Examples</h2>
+        <p style="color: var(--fluorescent-cyan); margin-bottom: 15px">
+          Click any example to load it:
+        </p>
+
+        <button class="example-btn" onclick="loadExample('cities')">
+          Major Cities
+        </button>
+        <button class="example-btn" onclick="loadExample('capitals')">
+          European Capitals
+        </button>
+        <button class="example-btn" onclick="loadExample('landmarks')">
+          Famous Landmarks
+        </button>
+        <button class="example-btn" onclick="loadExample('beaches')">
+          Beautiful Beaches
+        </button>
+
+        <div style="margin-top: 15px">
+          <p style="color: var(--naples-yellow); font-size: 0.9rem">
+            <strong>💡 Tip:</strong> You can include country names for better
+            accuracy (e.g., "Paris, France" instead of just "Paris")
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      let map;
+      let markers = [];
+      let markerColors = [
+        "#fde157", // naples-yellow
+        "#fbd743", // mustard
+        "#45f0f0", // fluorescent-cyan
+        "#0695d6", // celestial-blue
+        "#043256", // prussian-blue
+      ];
+
+      // Initialize map
+      function initMap() {
+        map = L.map("map").setView([20, 0], 2);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
+          maxZoom: 18,
+        }).addTo(map);
+      }
+
+      // Generate map with pins
+      async function generateMap() {
+        const placesInput = document.getElementById("placesInput").value.trim();
+        const statusDiv = document.getElementById("status");
+
+        if (!placesInput) {
+          showStatus("Please enter at least one place name.", "error");
+          return;
+        }
+
+        showStatus("Generating map...", "info");
+
+        // Clear existing markers
+        clearMap();
+
+        const places = placesInput.split("\n").filter((place) => place.trim());
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (let i = 0; i < places.length; i++) {
+          const place = places[i].trim();
+          if (!place) continue;
+
+          try {
+            const coordinates = await geocodePlace(place);
+            if (coordinates) {
+              addMarker(coordinates, place, i);
+              successCount++;
+            } else {
+              errorCount++;
+            }
+          } catch (error) {
+            errorCount++;
+            console.error(`Error geocoding ${place}:`, error);
+          }
+        }
+
+        // Fit map to show all markers
+        if (markers.length > 0) {
+          const group = new L.featureGroup(markers);
+          map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+        // Show results
+        if (successCount > 0) {
+          showStatus(
+            `✅ Map generated! ${successCount} places found${
+              errorCount > 0 ? `, ${errorCount} not found` : ""
+            }`,
+            "success"
+          );
+        } else {
+          showStatus(
+            "❌ No places could be found. Please check your input.",
+            "error"
+          );
+        }
+      }
+
+      // Geocode place name to coordinates
+      async function geocodePlace(placeName) {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+              placeName
+            )}&limit=1`
+          );
+          const data = await response.json();
+
+          if (data && data.length > 0) {
+            return {
+              lat: parseFloat(data[0].lat),
+              lng: parseFloat(data[0].lon),
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error("Geocoding error:", error);
+          return null;
+        }
+      }
+
+      // Add marker to map
+      function addMarker(coordinates, placeName, index) {
+        const color = markerColors[index % markerColors.length];
+
+        const marker = L.marker([coordinates.lat, coordinates.lng], {
+          icon: L.divIcon({
+            className: "custom-marker",
+            html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          }),
+        }).addTo(map);
+
+        marker.bindPopup(`
+                <div style="font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;">
+                    <strong style="color: #043256;">📍 ${placeName}</strong><br>
+                    <small style="color: #0695d6;">Lat: ${coordinates.lat.toFixed(
+                      4
+                    )}<br>
+                    Lng: ${coordinates.lng.toFixed(4)}</small>
+                </div>
+            `);
+
+        markers.push(marker);
+      }
+
+      // Clear map
+      function clearMap() {
+        markers.forEach((marker) => map.removeLayer(marker));
+        markers = [];
+      }
+
+      // Clear input
+      function clearInput() {
+        document.getElementById("placesInput").value = "";
+        document.getElementById("status").style.display = "none";
+      }
+
+      // Show status message
+      function showStatus(message, type) {
+        const statusDiv = document.getElementById("status");
+        statusDiv.textContent = message;
+        statusDiv.className = `status ${type}`;
+        statusDiv.style.display = "block";
+      }
+
+      // Load example data
+      function loadExample(type) {
+        const examples = {
+          cities: `New York, USA
+London, UK
+Tokyo, Japan
+Paris, France
+Sydney, Australia
+Rio de Janeiro, Brazil
+Cairo, Egypt
+Mumbai, India`,
+          capitals: `Berlin, Germany
+Madrid, Spain
+Rome, Italy
+Amsterdam, Netherlands
+Stockholm, Sweden
+Oslo, Norway
+Copenhagen, Denmark
+Vienna, Austria`,
+          landmarks: `Eiffel Tower, Paris
+Statue of Liberty, New York
+Taj Mahal, India
+Great Wall of China
+Machu Picchu, Peru
+Petra, Jordan
+Christ the Redeemer, Rio de Janeiro
+Stonehenge, England`,
+          beaches: `Copacabana Beach, Rio de Janeiro
+Bondi Beach, Sydney
+Waikiki Beach, Hawaii
+Maldives
+Bora Bora, French Polynesia
+Santorini, Greece
+Bali, Indonesia
+Maui, Hawaii`,
+        };
+
+        document.getElementById("placesInput").value = examples[type] || "";
+        showStatus(`Loaded ${type} example!`, "info");
+      }
+
+      // Initialize map when page loads
+      document.addEventListener("DOMContentLoaded", function () {
+        initMap();
+        showStatus("Ready to generate maps! Enter place names above.", "info");
+      });
+
+      // Handle Enter key in textarea
+      document
+        .getElementById("placesInput")
+        .addEventListener("keydown", function (e) {
+          if (e.ctrlKey && e.key === "Enter") {
+            generateMap();
+          }
+        });
+    </script>
+  </body>
+</html>
